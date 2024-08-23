@@ -1,0 +1,87 @@
+﻿@page "/edit-staff/{id:guid}"
+@using API.Models
+@inject Service.IStaffSer StaffService
+@inject NavigationManager NavigationManager
+<h3>EditStaff</h3>
+
+
+<EditForm Model="staff" OnValidSubmit="SubmitForm">
+	<DataAnnotationsValidator></DataAnnotationsValidator>
+	<ValidationSummary></ValidationSummary>
+	@*     <div>
+	<label>Created Date</label>
+	<InputDate @bind-Value="staff.CreatedDate" />
+	</div> *@
+	
+	@* <div>
+	<label>Last Modified Date</label>
+	<InputDate @bind-Value="staff.LastModifiedDate" />
+	</div> *@
+	@if (isVisible)
+	{		
+		<div>
+			<label>Created Date</label>
+			<InputDate class="input is-small"
+			Value="staff.CreatedDateTime"
+			ValueChanged="(DateTime newDate) => ChuyenKieuDuLieuCreateDateTime(newDate)"
+			ValueExpression="() => staff.CreatedDateTime"
+			max="@DateTime.Now.ToString("yyyy-MM-dd")"></InputDate>
+		</div>
+		<div>
+			<label>Last Modified Date</label>
+			<InputDate class="input is-small"
+			Value="staff.LastModifiedDateTime"
+			ValueChanged="(DateTime newDate) => ChuyenKieuDuLieuLastModifiedDateTime(newDate)"
+			ValueExpression="() => staff.LastModifiedDateTime"
+			max="@DateTime.Now.ToString("yyyy-MM-dd")"></InputDate>
+		</div>
+	}
+	<div>
+		<label>Mã nhân viên</label>
+		<InputText @bind-Value="staff.StaffCode" />
+		<ValidationMessage For="@(() => staff.StaffCode)" />
+	</div>
+	<div>
+		<label>Tên nhân viên</label>
+		<InputText @bind-Value="staff.Name" />
+		<ValidationMessage For="@(() => staff.Name)" />
+	</div>
+	<div>
+		<label>Email FE</label>
+		<InputText @bind-Value="staff.AccountFe" />
+		<ValidationMessage For="@(() => staff.AccountFe)" />
+	</div>
+	<div>
+		<label>Email FPT</label>
+		<InputText @bind-Value="staff.AccountFpt" />
+		<ValidationMessage For="@(() => staff.AccountFpt)" />
+	</div>
+	<button type="submit">Edit</button>
+</EditForm>
+@code {
+	[Parameter]
+	public Guid Id { get; set; }
+	private Staff staff = new Staff();
+	protected override async Task OnInitializedAsync()
+	{
+		staff = await StaffService.GetById(Id);
+	}
+	private void ChuyenKieuDuLieuCreateDateTime(DateTime newDate)
+	{
+		// Cập nhật thuộc tính `CreatedDate` với giá trị `bigint` mới
+		staff.CreatedDate = new DateTimeOffset(newDate).ToUnixTimeMilliseconds();
+		staff.LastModifiedDate = new DateTimeOffset(newDate).ToUnixTimeMilliseconds();
+	}
+	private void ChuyenKieuDuLieuLastModifiedDateTime(DateTime newDate)
+	{
+		// Cập nhật thuộc tính `CreatedDate` với giá trị `bigint` mới		
+		staff.LastModifiedDate = new DateTimeOffset(newDate).ToUnixTimeMilliseconds();
+	}
+	private async Task SubmitForm()
+	{
+		await StaffService.Update(staff);
+		NavigationManager.NavigateTo("/list-staff");
+
+	}
+	private bool isVisible = false; // Điều kiện ẩn/hiện trường
+}

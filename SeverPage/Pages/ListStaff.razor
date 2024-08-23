@@ -1,0 +1,97 @@
+﻿@page "/list-staff"
+@using API.Models
+@inject Service.IStaffSer StaffService
+@inject NavigationManager NavigationManager
+
+<h3>ListStaff</h3>
+
+<button class="btn btn-primary" @onclick="NavigationToCreate">Create New</button>
+@* <button class="btn btn-primary" @onclick="">Download</button>
+<button class="btn btn-primary" @onclick="">Import</button>
+<button class="btn btn-primary" @onclick="">Lịch sử import</button> *@
+
+@if (staff == null)
+{
+    <p>...DDang load</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">STT</th>
+                @* <th scope="col">CreatedDate</th>
+                <th scope="col">LastModifiedDate</th> *@
+                @* <th scope="col">Mã nhân viên</th> *@
+                <th scope="col">Mã nhân viên</th>
+                <th scope="col">Tên nhân viên</th>
+                <th scope="col">Email FE</th>
+                <th scope="col">Email FPT</th>                            
+                <th scope="col">Status</th>
+                <th scope="col">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var nv in staff.Select((value, index) => new { Value = value, Index = index }))
+            {
+                <tr>
+                    <td>@(nv.Index + 1)</td> <!-- Số thứ tự tăng dần -->
+                    @* <td>@nv.Value.Id.ToString()</td> *@
+                    @*  <td>@nv.CreatedDateTime</td>
+            <td>@nv.LastModifiedDateTime</td> *@
+                    <td>@nv.Value.StaffCode</td>
+                    <td>@nv.Value.Name</td>
+                    <td>@nv.Value.AccountFe</td>
+                    <td>@nv.Value.AccountFpt</td>                   
+                    <th scope="row">@nv.Value.StatusString</th>
+                    <td>
+                        <button @onclick="() => ChangeStatus(nv.Value.Id)">Chuyển trạng thái</button>
+                        <button @onclick="() => NavigationToEdit(nv.Value.Id)">Edit</button>
+                      @*   <button @onclick="() => ClickDelete(nv.Value.Id)">Delete</button> *@
+                        <button @onclick="() => NavigationToEditBoMonChuyenNganh(nv.Value.Id)">Edit môn/ngành</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@code {
+    private List<Staff> staff;
+
+    protected override async Task OnInitializedAsync()
+    {
+        staff = await StaffService.GetAll();
+    }
+
+    protected async Task NavigationToCreate()
+    {
+        NavigationManager.NavigateTo("/create-staff");
+    }
+
+    protected async Task NavigationToEdit(Guid id)
+    {
+        NavigationManager.NavigateTo($"/edit-staff/{id}");
+    }
+    protected async Task NavigationToEditBoMonChuyenNganh(Guid id)
+    {
+        NavigationManager.NavigateTo($"/edit-staffnv/{id}");
+        // NavigationManager.NavigateTo("/staff-assignment");
+    }
+
+    // protected async Task ClickDelete(Guid id)
+    // {
+    //     await StaffService.Delete(id);
+    //     staff = await StaffService.GetAll();
+    // }
+    protected async Task ChangeStatus(Guid id)
+    {
+        var item = staff.FirstOrDefault(x => x.Id == id);
+        if (item != null)
+        {
+            item.DoiTrangThai(); // Đổi trạng thái
+        }
+
+    }
+    private bool isVisible = false; // Điều kiện ẩn/hiện trường
+    
+}

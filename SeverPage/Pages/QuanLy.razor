@@ -1,0 +1,173 @@
+﻿@page "/edit-staffnv/{id:guid}"
+@using API.Models
+@using SeverPage.Service
+@inject IStaffSer StaffService
+
+<h3>Quản lý chuyên ngành</h3>
+
+<EditForm Model="staff">
+    
+    <div>
+        <label>Mã nhân viên</label>
+        <InputText @bind-Value="staff.StaffCode" />
+        <ValidationMessage For="@(() => staff.StaffCode)" />
+    </div>
+    <div>
+        <label>Tên nhân viên</label>
+        <InputText @bind-Value="staff.Name" />
+        <ValidationMessage For="@(() => staff.Name)" />
+    </div>
+    <div>
+        <label>Email FE</label>
+        <InputText @bind-Value="staff.AccountFe" />
+        <ValidationMessage For="@(() => staff.AccountFe)" />
+    </div>
+    <div>
+        <label>Email FPT</label>
+        <InputText @bind-Value="staff.AccountFpt" />
+        <ValidationMessage For="@(() => staff.AccountFpt)" />
+    </div>
+    <button type="submit">Edit</button>
+</EditForm>
+
+
+@* <table class="table">
+    <thead>
+        <tr>
+            <th scope="col">Mã nhân viên</th>
+            <th scope="col">Tên nhân viên</th>
+            <th scope="col">Email FE</th>
+            <th scope="col">Email FPT</th>
+        </tr>
+    </thead>
+    <tbody>
+        
+            <tr>
+            <td @bind-Value="staff.StaffCode"></td>
+            <td @bind="staff.Name"></td>
+            <td @bind="staff.AccountFe"></td>
+            <td @bind="staff.AccountFpt"></td>               
+            </tr>      
+    </tbody>
+</table> *@
+        
+
+<div>
+    <label for="facility">Chọn cơ sở:</label>
+    <select id="facility" @bind="selectedFacilityId" @bind:event="onchange">
+        <option value="">Chọn cơ sở</option>
+        @foreach (var facility in facilities)
+        {
+            <option value="@facility.Id">@facility.Name</option>
+        }
+    </select>
+</div>
+
+<div>
+    <label for="majorFacility">Chọn bộ môn:</label>
+    <select id="majorFacility" @bind="selectedMajorFacilityId" @bind:event="onchange">
+        <option value="">Chọn bộ môn</option>
+        @foreach (var majorFacility in majorFacilities)
+        {
+            <option value="@majorFacility.Id">@majorFacility.IdMajorNavigation?.Name</option>
+        }
+    </select>
+</div>
+
+<div>
+    <label for="major">Chọn chuyên ngành:</label>
+    <select id="major" @bind="selectedMajorId">
+        <option value="">Chọn chuyên ngành</option>
+        @foreach (var major in majors)
+        {
+            <option value="@major.Id">@major.Name</option>
+        }
+    </select>
+</div>
+
+<button @onclick="AddStaffMajorFacility">Thêm</button>
+
+<h4>Danh sách chuyên ngành của nhân viên</h4>
+<ul>
+    @foreach (var item in staffMajorFacilities)
+    {
+        <li>@GetMajorName(item.IdMajorFacility) - <button @onclick="() => DeleteStaffMajorFacility(item.Id)">Xóa</button></li>
+    }
+</ul>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+    private Staff staff = new Staff();
+    private List<Facility> facilities = new List<Facility>();
+    private List<MajorFacility> majorFacilities = new List<MajorFacility>();
+    private List<Major> majors = new List<Major>();
+    private List<StaffMajorFacility> staffMajorFacilities = new List<StaffMajorFacility>();
+
+    private Guid? selectedFacilityId;
+    private Guid? selectedMajorFacilityId;
+    private Guid? selectedMajorId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        staff = await StaffService.GetById(Id);
+        facilities = await StaffService.GetFacilitiesAsync();
+        
+    }
+
+    private async Task OnFacilityChanged(ChangeEventArgs e)
+    {
+        selectedFacilityId = (Guid?)e.Value;
+        if (selectedFacilityId.HasValue)
+        {
+            majorFacilities = await StaffService.GetMajorFacilitiesAsync(selectedFacilityId.Value);
+            selectedMajorFacilityId = null;
+            selectedMajorId = null;
+            majors.Clear();
+        }
+    }
+
+    private async Task OnMajorFacilityChanged(ChangeEventArgs e)
+    {
+        selectedMajorFacilityId = (Guid?)e.Value;
+        if (selectedMajorFacilityId.HasValue)
+        {
+            majors = await StaffService.GetMajorsAsync(selectedMajorFacilityId.Value);
+            selectedMajorId = null;
+        }
+    }
+
+    private async Task AddStaffMajorFacility()
+    {
+        if (selectedFacilityId.HasValue && selectedMajorFacilityId.HasValue && selectedMajorId.HasValue)
+        {
+            var staffMajorFacility = new StaffMajorFacility
+                {
+                    IdMajorFacility = selectedMajorFacilityId.Value,
+                    Status = 1, // Ví dụ giá trị status
+                    CreatedDate = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    LastModifiedDate = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                };
+
+            await StaffService.AddStaffMajorFacilityAsync(staffMajorFacility);
+            await LoadStaffMajorFacilities(); // Cập nhật danh sách
+        }
+    }
+
+    private async Task DeleteStaffMajorFacility(Guid id)
+    {
+        await StaffService.DeleteStaffMajorFacilityAsync(id);
+        await LoadStaffMajorFacilities(); // Cập nhật danh sách
+    }
+
+    private async Task LoadStaffMajorFacilities()
+    {
+        staffMajorFacilities = await StaffService.GetStaffMajorFacilitiesAsync();
+    }
+
+    private string GetMajorName(Guid? idMajor)
+    {
+        var major = majors.FirstOrDefault(m => m.Id == idMajor);
+        return major?.Name ?? "Không có tên";
+    }
+}
